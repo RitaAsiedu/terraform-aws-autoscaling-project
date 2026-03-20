@@ -55,6 +55,9 @@ Before deploying this project, make sure you have the following:
 - [AWS CLI](https://aws.amazon.com/cli/) installed and configured (`aws configure`)
 - An AWS account with permissions to create EC2, ALB, ASG, and CloudWatch resources
 - An existing EC2 Key Pair in your AWS account for SSH access
+- The `.pem` file for your key pair downloaded and stored safely on your machine
+
+> **Important:** AWS only lets you download the `.pem` file once — at the time of key pair creation. Store it somewhere safe like `~/.ssh/` on Mac/Linux or `C:\Users\<username>\.ssh\` on Windows.
 
 ---
 
@@ -89,7 +92,7 @@ key_pair_name = "my-key-pair"
 ssh_cidr      = "YOUR_IP/32"
 ```
 
-> **Note:** Never commit `terraform.tfvars` to version control if it contains sensitive values. Add it to `.gitignore`.
+> **Note:** Never commit `terraform.tfvars` to version control. It is listed in `.gitignore` for your protection.
 
 ---
 
@@ -118,9 +121,7 @@ terraform plan
 terraform apply
 ```
 
-**6. After apply, Terraform will output:**
-- The ALB DNS name to access your application
-- A CLI command to fetch current instance IPs
+**6. After apply, Terraform will output your ALB DNS name and SSH commands.**
 
 ---
 
@@ -128,52 +129,83 @@ terraform apply
 
 | Output | Description |
 |---|---|
-| `alb_dns_name` | DNS name of the Application Load Balancer — open in browser to see Apache page |
-| `get_instance_ips` | AWS CLI command to fetch public IPs of current ASG instances |
+| `alb_dns_name` | DNS name of the Application Load Balancer |
+| `instance_public_ips` | Public IPs of all current ASG instances |
+| `ssh_commands` | Ready-to-use SSH commands for each instance |
 
-Access your application:
+**View outputs at any time without re-applying:**
+```bash
+terraform output
+terraform output ssh_commands
 ```
-http://<alb_dns_name>
-```
+
+> **Tip:** After scaling events, run `terraform output ssh_commands` to get updated SSH commands for new instances.
 
 ---
 
 ## Testing
 
 ### Test 1 — Verify Apache is Running
-Open the ALB DNS name in your browser. You should see:
+
+Open the ALB DNS name in your browser:
+```
+http://<alb_dns_name>
+```
+
+You should see:
 ```
 AWS Auto Scaling Student Project
 Server Hostname: ip-xxx-xxx-xxx-xxx.ec2.internal
 ```
 
-### Test 2 — Test Auto Replacement
-Terminate one instance manually in the AWS Console and watch the ASG automatically launch a replacement under EC2 → Auto Scaling Groups → Activity tab.
+Refresh a few times — the hostname should change as the Load Balancer routes to different instances.
 
-### Test 3 — Test CPU Scaling
-SSH into an instance and run a CPU stress test:
+---
 
-**Get instance IPs:**
+### Test 2 — SSH Into an Instance
+
+**Step 1 — Get SSH commands from Terraform output:**
 ```bash
-# Run the CLI command from Terraform outputs
-aws ec2 describe-instances \
-  --filters "Name=tag:aws:autoscaling:groupName,Values=web-asg" \
-  --query "Reservations[].Instances[].PublicIpAddress" \
-  --output text
+terraform output ssh_commands
 ```
 
-**SSH into an instance:**
+**Step 2 — Set correct permissions on your `.pem` file:**
 ```bash
-ssh -i your-key.pem ec2-user@<instance-public-ip>
+chmod 400 /path/to/your-key.pem
 ```
 
-**Install and run stress test:**
+**Step 3 — SSH into an instance:**
+```bash
+ssh -i /path/to/your-key.pem ec2-user@<instance-public-ip>
+```
+
+> **Note:** Make sure to use the full path to your `.pem` file. On Mac/Linux it is usually in `~/Downloads/` or `~/.ssh/`.
+
+---
+
+### Test 3 — Test Auto Replacement
+
+1. Go to AWS Console → EC2 → Instances
+2. Manually terminate one instance
+3. Go to EC2 → Auto Scaling Groups → web_asg → **Activity** tab
+4. Watch the ASG automatically launch a replacement instance
+
+---
+
+### Test 4 — Test CPU Scaling
+
+**Step 1 — SSH into an instance (see Test 2)**
+
+**Step 2 — Install and run the stress tool:**
 ```bash
 sudo yum install stress -y
 stress --cpu 4 --timeout 300
 ```
 
-Watch EC2 → Auto Scaling Groups → web-asg → Activity tab to see new instances launch when CPU exceeds 50%.
+**Step 3 — Watch the ASG scale out in AWS Console:**
+- Go to EC2 → Auto Scaling Groups → web_asg → **Activity** tab
+- Go to CloudWatch → Alarms — watch alarms trigger
+- New instances should launch when CPU exceeds 50%
 
 ---
 
