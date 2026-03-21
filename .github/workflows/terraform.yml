@@ -10,13 +10,13 @@ permissions:
   id-token: write
   contents: read
 env:
-    TF_VAR_aws_region: us-east-1
+    TF_VAR_aws_region: ${{env.AWS_REGION}} 
     TF_VAR_ami_id: ${{ secrets.AMI_ID }}
     TF_VAR_key_pair_name: ${{ secrets.KEY_PAIR_NAME }}
     TF_VAR_ssh_cidr: ${{ secrets.SSH_CIDR }}
 jobs:
   terraform-plan:
-    name: 'Terraform'
+    name: 'Terraform Deploy'
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
