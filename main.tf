@@ -12,6 +12,17 @@ provider "aws" {
 
 }
 
+terraform {
+  backend "s3" {
+    bucket         = "github-terraform-project"
+    key            = "terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "terraform-state-lock"
+    encrypt        = true
+  }
+}
+
+
 data "aws_vpc" "default" {
  default = true
   }
