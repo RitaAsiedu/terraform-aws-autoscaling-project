@@ -8,7 +8,7 @@ terraform {
 }
 
 provider "aws" {
-    region = var.aws_region
+  region = var.aws_region
 
 }
 
@@ -24,14 +24,14 @@ terraform {
 
 
 data "aws_vpc" "default" {
- default = true
-  }
+  default = true
+}
 
 
 resource "aws_security_group" "web_sg" {
-    name  = "web_sg"
-    description = "Allow inbound traffic for HTTP and SSH, and all outboudnd traffic"
-    vpc_id = data.aws_vpc.default.id
+  name        = "web_sg"
+  description = "Allow inbound traffic for HTTP and SSH, and all outboudnd traffic"
+  vpc_id      = data.aws_vpc.default.id
 
   ingress {
     description = "HTTP access"
@@ -47,7 +47,7 @@ resource "aws_security_group" "web_sg" {
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
-  } 
+  }
   egress {
     from_port        = 0
     to_port          = 0
@@ -60,16 +60,16 @@ resource "aws_security_group" "web_sg" {
 resource "aws_launch_template" "web_template" {
   name = "web_template"
 
-    image_id = var.ami_id
-    instance_type = "t2.micro"
-    vpc_security_group_ids = [aws_security_group.web_sg.id]
+  image_id               = var.ami_id
+  instance_type          = "t2.micro"
+  vpc_security_group_ids = [aws_security_group.web_sg.id]
 
-   user_data = filebase64("${path.module}/user_data.sh")
-  }
+  user_data = filebase64("${path.module}/user_data.sh")
+}
 
-   data "aws_key_pair" "existing" {
-    key_name = var.key_name
-}   
+data "aws_key_pair" "existing" {
+  key_name = var.key_name
+}
 
 resource "aws_lb_target_group" "web-target-group" {
   name     = "web-target-group"
@@ -94,9 +94,9 @@ resource "aws_lb" "web-alb" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.web_sg.id]
-  subnets = local.selected_subnets
+  subnets            = local.selected_subnets
 
- 
+
 
 
 
@@ -122,13 +122,13 @@ resource "aws_autoscaling_group" "web_asg" {
   min_size         = 2
   max_size         = 4
 
-   wait_for_capacity_timeout = "0"
-   
-force_delete = true
+  wait_for_capacity_timeout = "0"
+
+  force_delete        = true
   vpc_zone_identifier = local.selected_subnets
 
   health_check_type         = "ELB"
-   health_check_grace_period = 300
+  health_check_grace_period = 300
 
   target_group_arns = [
     aws_lb_target_group.web-target-group.arn
