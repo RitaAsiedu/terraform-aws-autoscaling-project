@@ -21,8 +21,3 @@ variable "key_name" {
   default     = "server_key"
 
 }
-
-
-
-
-

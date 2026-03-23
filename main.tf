@@ -7,11 +7,6 @@ terraform {
   }
 }
 
-provider "aws" {
-  region = var.aws_region
-
-}
-
 terraform {
   backend "s3" {
     bucket         = "github-terraform-project"
@@ -21,6 +16,10 @@ terraform {
   }
 }
 
+provider "aws" {
+  region = var.aws_region
+
+}
 
 data "aws_vpc" "default" {
   default = true
