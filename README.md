@@ -44,6 +44,8 @@ EC2 (AZ-1)  EC2 (AZ-2)
           v
     Scaling Policy (target 50% CPU)
 ```
+<img width="722" height="561" alt="image" src="https://github.com/user-attachments/assets/0d7e5a04-b96c-4ec6-99d8-ab8c171c313e" />
+
 
 ---
 
